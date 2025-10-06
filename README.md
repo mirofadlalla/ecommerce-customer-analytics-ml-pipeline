@@ -154,6 +154,49 @@ Cleaning wasn’t just about dropping NaNs — it used **machine learning-based 
 * Seasonal return peaks in Q4 (holiday period).
 
 ---
+### 📊 Boxplot Insight: Loyalty Behavior
+
+Loyals aren't loyal because they have a high AOV, but because they buy more often.
+What makes them *loyal* is **frequency, not order size.**
+
+* Non-loyal customers have more variety in order size.
+* Some customers try a product for the first time and spend a large amount (high spenders) but don't return.
+* Loyal customers are more stable with consistent spending patterns.
+
+**Main Insight:**
+Attracting high-AOV customers doesn't guarantee loyalty.
+True loyal customers are **consistent medium spenders.**
+
+**Recommendations:**
+
+* Launch loyalty programs.
+* Personalize offers.
+* Give incentives for repeat purchases.
+
+---
+
+## 📊 ** CLV Segment Analysis**
+
+### High CLV (Top 25%):
+
+* Customers spend and purchase frequently → **VIP group**.
+* Requires **exclusive loyalty programs** and premium offers.
+
+### Mid-High CLV (50–75%):
+
+* Potential to move to High CLV with **Cross-sell / Upsell**.
+
+### Mid-Low CLV (25–50%):
+
+* Regular buyers but not consistent → need **incentives** (points, bundles).
+
+### Low CLV (Bottom 25%):
+
+* Mostly **one-time buyers** → require **retargeting** via Email or Ads.
+
+**Main Insight:**
+Revenue distribution is not equal → top 20–25% of customers drive most profits.
+---
 
 ## 🤖 **7. Machine Learning Modeling**
 
