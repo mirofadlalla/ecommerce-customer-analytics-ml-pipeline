@@ -1,3 +1,4 @@
+from ast import Global
 import asyncio
 import pickle 
 from fastapi import FastAPI , HTTPException , Depends 
@@ -8,13 +9,23 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 import numpy as np 
 import pandas as pd
-
+from transformers import AutoTokenizer , AutoModelForSequenceClassification # for nlp
+from scipy.special import softmax
+from typing import List
 
 loyalCustmer_model = None # pickle.load("loyalCustmer_LogisticRegression1.pkl")
 custmer_order_returns = None
 csutomer_CLV = None 
 kmeans = None
+tokienzier = None
+model = None
 
+def load_nlp():
+    global tokienzier
+    global model
+    MODEL = f"cardiffnlp/twitter-roberta-base-sentiment"
+    tokienzier = AutoTokenizer.from_pretrained(MODEL)
+    model = AutoModelForSequenceClassification.from_pretrained(MODEL)
 
 def load_ecommerce_models():
     global loyalCustmer_model
@@ -22,6 +33,7 @@ def load_ecommerce_models():
     global csutomer_CLV
     global kmeans
     
+    load_nlp()
     with open("./ecommerce_large/loyalCustmer_LogisticRegression1.pkl", "rb") as f:
         loyalCustmer_model = pickle.load(f)
     with open("./ecommerce_large/custmerReturns_XGBClassifier.pkl", "rb") as f:
@@ -359,3 +371,73 @@ test data :
 
 
 """
+
+# ----------------------- S -----------------------------
+import nltk
+nltk.download('stopwords')
+nltk.download('wordnet')
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+import re
+stop_words = set(stopwords.words('english'))
+lemitizer = WordNetLemmatizer()
+
+class reviews_analysis(BaseModel):
+   reviews : str = Field(..., min_length=15, max_length=250)
+
+# Text Preprossing 
+def cleaning_texts(text):
+    text = re.sub(r"[^ A-Za-z0-9.!?']", "", text)
+    text = re.sub(r" +", " ", text)
+    text = re.sub(r'http\S+', '', text)
+    text = re.sub(r'@\w+', '', text)
+    text = re.sub(r'[^\w\s]', '', text)
+
+    text = text.lower()
+
+    text = re.sub(r'\d+', '', text)
+
+    text = ' '.join(word for word in text.split() if word not in stop_words)
+
+    lemitized_text = ' '.join(lemitizer.lemmatize(word) for word in text.split())
+    return lemitized_text
+
+# classify whatever the score result is negative , neutral or positive
+def classify_sentiment(row):
+    scores = [row[0], row[1], row[2]]
+    max_index = np.argmax(scores)  # هترجع 0 أو 1 أو 2
+    if max_index == 0:
+        return 'negative'
+    elif max_index == 1:
+        return 'neutral'
+    else:
+        return 'positive'
+
+# Text Predication Using roberta
+def polarity_scores_roberta(data : reviews_analysis , api_key : str):
+    if api_key != API_SECRET_KEY:
+        raise HTTPException(status_code=403, detail="API Key not correct ❌")
+    
+    if rate_limiter.is_rate_limited(api_key):
+        raise HTTPException(status_code=429, detail="Too Many Requests ⛔")
+    
+    # clean the text 
+    text = cleaning_texts(data.reviews)
+    # encode the text then predict it
+    encoded_text = tokienzier(text, return_tensors='pt')
+    output = model(**encoded_text)
+
+    scores = softmax(output[0][0].detach().numpy()).tolist()
+
+    return classify_sentiment(scores)
+
+@app.post("/reviews_analysis")
+async def predict_reviews_analysis(data : reviews_analysis , api_key : str = Depends(header_schema)):
+
+    restult = await asyncio.to_thread(polarity_scores_roberta , data , api_key )
+    return restult
+
+# test data : 
+#     {
+#         "reviews" : "Outstanding quality! I've been using the Stark"
+#     }
